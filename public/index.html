@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ninna Beauty — Prendre rendez-vous</title>
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <img src="assets/logo.svg" alt="Ninna Beauty">
+      <p class="tagline">L'art de sublimer vos ongles</p>
+    </header>
+
+    <div class="steps" id="steps">
+      <div class="step-dot" data-step="1"><span class="num">1</span> Créneau</div>
+      <div class="step-sep"></div>
+      <div class="step-dot" data-step="2"><span class="num">2</span> Pose</div>
+      <div class="step-sep"></div>
+      <div class="step-dot" data-step="3"><span class="num">3</span> Coordonnées</div>
+    </div>
+
+    <section id="step-1" class="card">
+      <p class="section-label">Choisissez votre créneau</p>
+      <div class="cal-head">
+        <button class="cal-nav" id="cal-prev" aria-label="Mois précédent">‹</button>
+        <div class="cal-title" id="cal-title"></div>
+        <button class="cal-nav" id="cal-next" aria-label="Mois suivant">›</button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div id="times-zone" class="hidden">
+        <p class="section-label" style="margin-top:20px" id="times-label"></p>
+        <div class="times" id="times"></div>
+      </div>
+      <button class="btn" id="to-step-2" disabled>Continuer</button>
+    </section>
+
+    <section id="step-2" class="card hidden">
+      <p class="section-label">Choisissez votre pose</p>
+      <div id="services"></div>
+      <button class="btn" id="to-step-3" disabled>Voir le récapitulatif</button>
+      <div style="text-align:center; margin-top:10px">
+        <button class="btn ghost" data-back="1">← Modifier le créneau</button>
+      </div>
+    </section>
+
+    <section id="step-3" class="card hidden">
+      <p class="section-label">Votre rendez-vous</p>
+      <div class="recap" id="recap"></div>
+      <label class="field" for="f-name">Prénom et nom</label>
+      <input class="field" id="f-name" placeholder="Marie Dupont" autocomplete="name">
+      <label class="field" for="f-phone">Téléphone</label>
+      <input class="field" id="f-phone" type="tel" placeholder="06 12 34 56 78" autocomplete="tel">
+      <label class="field" for="f-email">Email</label>
+      <input class="field" id="f-email" type="email" placeholder="marie@exemple.fr" autocomplete="email">
+      <p class="error-msg hidden" id="book-error"></p>
+      <button class="btn" id="confirm-btn">Confirmer mon rendez-vous</button>
+      <div style="text-align:center; margin-top:10px">
+        <button class="btn ghost" data-back="2">← Modifier la pose</button>
+      </div>
+    </section>
+
+    <section id="step-4" class="card hidden" style="text-align:center">
+      <div class="confirm-icon">✓</div>
+      <h2>Rendez-vous confirmé</h2>
+      <p id="confirm-text" style="margin:10px 0 4px"></p>
+      <p class="hint">Un email de confirmation vous a été envoyé.<br>Voici votre code d'annulation, gardez-le précieusement :</p>
+      <div class="code-box" id="confirm-code"></div>
+      <button class="btn ghost" id="new-booking">Prendre un autre rendez-vous</button>
+    </section>
+
+    <section id="cancel-zone" class="card hidden">
+      <p class="section-label">Annuler un rendez-vous</p>
+      <p class="hint">Entrez le code reçu lors de votre réservation.</p>
+      <input class="field" id="cancel-code" placeholder="Ex : A1B2C3" style="margin-top:8px">
+      <p class="error-msg hidden" id="cancel-error"></p>
+      <p class="hint hidden" id="cancel-ok" style="color:var(--ok)"></p>
+      <button class="btn" id="cancel-btn">Annuler mon rendez-vous</button>
+    </section>
+
+    <footer class="site">
+      <a href="#" id="toggle-cancel">Annuler un rendez-vous</a> · <a href="/admin">Espace pro</a>
+    </footer>
+  </div>
+  <div class="flash" id="flash"></div>
+  <script src="app.js"></script>
+</body>
+</html>

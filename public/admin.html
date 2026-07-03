@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ninna Beauty — Espace pro</title>
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="wrap" style="max-width:760px">
+    <header class="site">
+      <img src="assets/logo.svg" alt="Ninna Beauty" style="width:90px">
+      <p class="tagline">Espace professionnel</p>
+    </header>
+
+    <section id="login-card" class="card" style="max-width:400px; margin:18px auto;">
+      <p class="section-label">Connexion</p>
+      <label class="field" for="login-pass">Mot de passe</label>
+      <input class="field" id="login-pass" type="password" placeholder="••••••••">
+      <p class="error-msg hidden" id="login-error"></p>
+      <button class="btn" id="login-btn">Se connecter</button>
+      <p class="hint" style="text-align:center; margin-top:12px"><a href="/" style="color:var(--muted)">← Retour au site</a></p>
+    </section>
+
+    <div id="admin-app" class="hidden">
+      <div class="admin-tabs">
+        <button class="tab-btn active" data-tab="bookings">Rendez-vous</button>
+        <button class="tab-btn" data-tab="planning">Disponibilités</button>
+        <button class="tab-btn" data-tab="services">Prestations</button>
+        <button class="tab-btn" data-tab="notifs">Notifications</button>
+        <button class="tab-btn" data-tab="settings">Paramètres</button>
+        <button class="tab-btn" id="logout-btn" style="margin-left:auto">Déconnexion</button>
+      </div>
+
+      <section id="tab-bookings" class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+          <p class="section-label" style="margin:0">Rendez-vous</p>
+          <label class="hint" style="display:flex; align-items:center; gap:6px">
+            <input type="checkbox" id="show-past"> Afficher passés / annulés
+          </label>
+        </div>
+        <div id="bookings-list"></div>
+      </section>
+
+      <section id="tab-planning" class="card hidden">
+        <p class="section-label">Semaine type</p>
+        <p class="hint">Définissez vos horaires d'ouverture habituels. Laissez vide pour une plage non travaillée.</p>
+        <div id="week-editor"></div>
+        <button class="btn" id="save-week">Enregistrer la semaine type</button>
+
+        <p class="section-label" style="margin-top:32px">Jour par jour</p>
+        <p class="hint">Choisissez une date pour fermer la journée ou bloquer des créneaux précis (cliquez sur un créneau pour le bloquer / débloquer).</p>
+        <input type="date" class="field" id="day-picker" style="max-width:220px; margin-top:8px">
+        <div id="day-detail" style="margin-top:14px"></div>
+      </section>
+
+      <section id="tab-services" class="card hidden">
+        <p class="section-label">Prestations et prix</p>
+        <div id="services-admin"></div>
+        <div style="border-top:1px solid var(--rose-soft); margin-top:18px; padding-top:16px">
+          <p class="section-label">Ajouter une prestation</p>
+          <label class="field">Nom</label>
+          <input class="field" id="new-svc-name" placeholder="Pose américaine">
+          <div style="display:flex; gap:12px">
+            <span style="flex:1"><label class="field">Prix (€)</label>
+            <input class="field" id="new-svc-price" type="number" min="0" placeholder="50"></span>
+            <span style="flex:1"><label class="field">Durée (min)</label>
+            <input class="field" id="new-svc-dur" type="number" min="15" step="15" placeholder="60"></span>
+          </div>
+          <label class="field">Description</label>
+          <input class="field" id="new-svc-desc" placeholder="Courte description visible par les clientes">
+          <button class="btn" id="add-svc">Ajouter</button>
+        </div>
+      </section>
+
+      <section id="tab-notifs" class="card hidden">
+        <p class="section-label">Historique des notifications</p>
+        <p class="hint" id="notif-status"></p>
+        <div id="notifs-list"></div>
+      </section>
+
+      <section id="tab-settings" class="card hidden">
+        <p class="section-label">Paramètres</p>
+        <label class="field">Nom de l'institut</label>
+        <input class="field" id="set-name">
+        <label class="field">Durée d'un créneau (en minutes)</label>
+        <input class="field" id="set-slot" type="number" min="10" max="240" step="5" placeholder="60" style="max-width:220px">
+        <p class="hint">Exemples : 45, 60, 75, 90… Les créneaux proposés aux clientes sont découpés selon cette durée.</p>
+        <label class="field">Email de notification (vous recevez les rendez-vous ici)</label>
+        <input class="field" id="set-email" type="email" placeholder="ninna@exemple.fr">
+        <label class="field">Numéro WhatsApp de notification (format international)</label>
+        <input class="field" id="set-wa" placeholder="+33612345678">
+        <p class="hint" id="channels-status" style="margin-top:10px"></p>
+        <label class="field">Nouveau mot de passe (laisser vide pour ne pas changer)</label>
+        <input class="field" id="set-pass" type="password" placeholder="Minimum 4 caractères">
+        <button class="btn" id="save-settings">Enregistrer les paramètres</button>
+      </section>
+    </div>
+  </div>
+  <div class="flash" id="flash"></div>
+  <script src="admin.js"></script>
+</body>
+</html>
