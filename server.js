@@ -129,6 +129,7 @@ function twilioConf() {
 const smtpReady = () => { const c = smtpConf(); return !!(nodemailer && c.host && c.user && c.pass); };
 const twilioReady = () => { const c = twilioConf(); return !!(c.sid && c.token && c.from); };
 
+let lastEmailError = '';
 async function sendEmail(to, subject, text) {
   if (!to) return 'skipped';
   if (!smtpReady()) return 'demo';
@@ -136,11 +137,14 @@ async function sendEmail(to, subject, text) {
   try {
     const transport = nodemailer.createTransport({
       host: c.host, port: c.port, secure: c.port === 465,
-      auth: { user: c.user, pass: c.pass }
+      auth: { user: c.user, pass: c.pass },
+      connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 20000
     });
     await transport.sendMail({ from: c.from || c.user, to, subject, text });
+    lastEmailError = '';
     return 'sent';
   } catch (e) {
+    lastEmailError = e.message;
     console.error('Email error:', e.message);
     return 'failed';
   }
@@ -442,7 +446,7 @@ app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
   const to = db.settings.notifyEmail || smtpConf().user;
   const status = await sendEmail(to, `${db.settings.salonName} — email de test`, 'Si vous recevez ce message, l’envoi d’emails fonctionne parfaitement ✨');
   logNotif('email', to, 'Email de test', 'Test de la configuration SMTP', status);
-  if (status !== 'sent') return res.status(500).json({ error: 'Échec de l’envoi — vérifiez le serveur, l’identifiant et le mot de passe SMTP' });
+  if (status !== 'sent') return res.status(500).json({ error: `Échec de l’envoi — ${lastEmailError || 'vérifiez le serveur, l’identifiant et le mot de passe SMTP'}` });
   res.json({ ok: true, to });
 });
 
