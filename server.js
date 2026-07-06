@@ -24,6 +24,14 @@ const defaultDb = {
     slotMinutes: 60,
     notifyEmail: '',
     notifyWhatsapp: '',
+    smtpHost: '',
+    smtpPort: '',
+    smtpUser: '',
+    smtpPass: '',
+    smtpFrom: '',
+    twilioSid: '',
+    twilioToken: '',
+    twilioFrom: '',
     week: {
       0: [],
       1: [{ from: '09:30', to: '12:30' }, { from: '14:00', to: '18:30' }],
@@ -96,19 +104,37 @@ function freeSlots(dateStr) {
   return slots;
 }
 
-const smtpReady = () => !!(nodemailer && process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
-const twilioReady = () => !!(process.env.TWILIO_SID && process.env.TWILIO_TOKEN && process.env.TWILIO_WHATSAPP_FROM);
+function smtpConf() {
+  const s = db.settings;
+  return {
+    host: s.smtpHost || process.env.SMTP_HOST,
+    port: +(s.smtpPort || process.env.SMTP_PORT || 587),
+    user: s.smtpUser || process.env.SMTP_USER,
+    pass: s.smtpPass || process.env.SMTP_PASS,
+    from: s.smtpFrom || process.env.SMTP_FROM
+  };
+}
+function twilioConf() {
+  const s = db.settings;
+  return {
+    sid: s.twilioSid || process.env.TWILIO_SID,
+    token: s.twilioToken || process.env.TWILIO_TOKEN,
+    from: s.twilioFrom || process.env.TWILIO_WHATSAPP_FROM
+  };
+}
+const smtpReady = () => { const c = smtpConf(); return !!(nodemailer && c.host && c.user && c.pass); };
+const twilioReady = () => { const c = twilioConf(); return !!(c.sid && c.token && c.from); };
 
 async function sendEmail(to, subject, text) {
   if (!to) return 'skipped';
   if (!smtpReady()) return 'demo';
+  const c = smtpConf();
   try {
-    const port = +(process.env.SMTP_PORT || 587);
     const transport = nodemailer.createTransport({
-      host: process.env.SMTP_HOST, port, secure: port === 465,
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+      host: c.host, port: c.port, secure: c.port === 465,
+      auth: { user: c.user, pass: c.pass }
     });
-    await transport.sendMail({ from: process.env.SMTP_FROM || process.env.SMTP_USER, to, subject, text });
+    await transport.sendMail({ from: c.from || c.user, to, subject, text });
     return 'sent';
   } catch (e) {
     console.error('Email error:', e.message);
@@ -119,15 +145,16 @@ async function sendEmail(to, subject, text) {
 async function sendWhatsapp(to, body) {
   if (!to) return 'skipped';
   if (!twilioReady()) return 'demo';
+  const c = twilioConf();
   try {
     const params = new URLSearchParams({
-      From: `whatsapp:${process.env.TWILIO_WHATSAPP_FROM}`,
+      From: `whatsapp:${c.from}`,
       To: `whatsapp:${to}`, Body: body
     });
-    const r = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_SID}/Messages.json`, {
+    const r = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${c.sid}/Messages.json`, {
       method: 'POST',
       headers: {
-        Authorization: 'Basic ' + Buffer.from(`${process.env.TWILIO_SID}:${process.env.TWILIO_TOKEN}`).toString('base64'),
+        Authorization: 'Basic ' + Buffer.from(`${c.sid}:${c.token}`).toString('base64'),
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: params
@@ -261,8 +288,14 @@ function requireAdmin(req, res, next) {
 }
 
 app.get('/api/admin/settings', requireAdmin, (req, res) => {
-  const { adminPassword, ...settings } = db.settings;
-  res.json({ ...settings, emailConfigured: smtpReady(), whatsappConfigured: twilioReady() });
+  const { adminPassword, smtpPass, twilioToken, ...settings } = db.settings;
+  res.json({
+    ...settings,
+    smtpPassSet: !!smtpConf().pass,
+    twilioTokenSet: !!twilioConf().token,
+    emailConfigured: smtpReady(),
+    whatsappConfigured: twilioReady()
+  });
 });
 
 app.put('/api/admin/settings', requireAdmin, (req, res) => {
@@ -273,6 +306,13 @@ app.put('/api/admin/settings', requireAdmin, (req, res) => {
   if (typeof b.notifyWhatsapp === 'string') s.notifyWhatsapp = b.notifyWhatsapp.trim();
   if (Number.isFinite(+b.slotMinutes) && +b.slotMinutes >= 10 && +b.slotMinutes <= 240) s.slotMinutes = Math.round(+b.slotMinutes);
   if (typeof b.adminPassword === 'string' && b.adminPassword.length >= 4) s.adminPassword = b.adminPassword;
+  for (const k of ['smtpHost', 'smtpPort', 'smtpUser', 'smtpFrom', 'twilioSid', 'twilioFrom']) {
+    if (typeof b[k] === 'string') s[k] = b[k].trim();
+  }
+  for (const k of ['smtpPass', 'twilioToken']) {
+    if (typeof b[k] === 'string' && b[k].trim()) s[k] = b[k].trim();
+    if (b[k] === null) s[k] = '';
+  }
   if (b.week && typeof b.week === 'object') {
     const week = {};
     for (let d = 0; d <= 6; d++) {
@@ -377,6 +417,15 @@ app.post('/api/admin/exceptions', requireAdmin, (req, res) => {
 });
 
 app.get('/api/admin/notifications', requireAdmin, (req, res) => res.json(db.notifications.slice(0, 100)));
+
+app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
+  if (!smtpReady()) return res.status(400).json({ error: 'Configurez et enregistrez d’abord les champs SMTP' });
+  const to = db.settings.notifyEmail || smtpConf().user;
+  const status = await sendEmail(to, `${db.settings.salonName} — email de test`, 'Si vous recevez ce message, l’envoi d’emails fonctionne parfaitement ✨');
+  logNotif('email', to, 'Email de test', 'Test de la configuration SMTP', status);
+  if (status !== 'sent') return res.status(500).json({ error: 'Échec de l’envoi — vérifiez le serveur, l’identifiant et le mot de passe SMTP' });
+  res.json({ ok: true, to });
+});
 
 const PORT = process.env.PORT || 3178;
 app.listen(PORT, () => console.log(`Ninna Beauty — http://localhost:${PORT} (admin: /admin)`));

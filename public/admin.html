@@ -95,6 +95,37 @@
         <label class="field">Numéro WhatsApp de notification (format international)</label>
         <input class="field" id="set-wa" placeholder="+33612345678">
         <p class="hint" id="channels-status" style="margin-top:10px"></p>
+
+        <div style="border-top:1px solid var(--rose-soft); margin-top:22px; padding-top:16px">
+          <p class="section-label">Envoi des emails (SMTP)</p>
+          <p class="hint">Avec Gmail : activez la validation en deux étapes puis créez un « mot de passe d'application » sur <span style="white-space:nowrap">myaccount.google.com/apppasswords</span>. Serveur : smtp.gmail.com, port 587.</p>
+          <div style="display:flex; gap:12px; flex-wrap:wrap">
+            <span style="flex:2; min-width:200px"><label class="field">Serveur SMTP</label>
+            <input class="field" id="smtp-host" placeholder="smtp.gmail.com"></span>
+            <span style="flex:1; min-width:100px"><label class="field">Port</label>
+            <input class="field" id="smtp-port" type="number" placeholder="587"></span>
+          </div>
+          <label class="field">Adresse email (identifiant)</label>
+          <input class="field" id="smtp-user" placeholder="ninnabeauty@gmail.com">
+          <label class="field">Mot de passe d'application</label>
+          <input class="field" id="smtp-pass" type="password" placeholder="">
+          <label class="field">Expéditeur affiché (facultatif)</label>
+          <input class="field" id="smtp-from" placeholder="Ninna Beauty &lt;ninnabeauty@gmail.com&gt;">
+          <button class="btn ghost" id="test-email-btn" style="margin-top:14px">Envoyer un email de test</button>
+        </div>
+
+        <div style="border-top:1px solid var(--rose-soft); margin-top:22px; padding-top:16px">
+          <p class="section-label">WhatsApp (Twilio)</p>
+          <p class="hint">Facultatif. Nécessite un compte twilio.com avec l'API WhatsApp activée.</p>
+          <label class="field">Account SID</label>
+          <input class="field" id="tw-sid" placeholder="AC…">
+          <label class="field">Auth Token</label>
+          <input class="field" id="tw-token" type="password" placeholder="">
+          <label class="field">Numéro WhatsApp expéditeur</label>
+          <input class="field" id="tw-from" placeholder="+14155238886">
+        </div>
+
+        <div style="border-top:1px solid var(--rose-soft); margin-top:22px; padding-top:6px"></div>
         <label class="field">Nouveau mot de passe (laisser vide pour ne pas changer)</label>
         <input class="field" id="set-pass" type="password" placeholder="Minimum 4 caractères">
         <button class="btn" id="save-settings">Enregistrer les paramètres</button>

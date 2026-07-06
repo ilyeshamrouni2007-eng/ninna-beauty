@@ -262,6 +262,14 @@ async function loadSettings() {
   $('set-slot').value = settings.slotMinutes;
   $('set-email').value = settings.notifyEmail || '';
   $('set-wa').value = settings.notifyWhatsapp || '';
+  $('smtp-host').value = settings.smtpHost || '';
+  $('smtp-port').value = settings.smtpPort || '';
+  $('smtp-user').value = settings.smtpUser || '';
+  $('smtp-from').value = settings.smtpFrom || '';
+  $('smtp-pass').placeholder = settings.smtpPassSet ? '•••••••• (enregistré)' : 'Mot de passe d\'application Gmail';
+  $('tw-sid').value = settings.twilioSid || '';
+  $('tw-from').value = settings.twilioFrom || '';
+  $('tw-token').placeholder = settings.twilioTokenSet ? '•••••••• (enregistré)' : 'Auth Token Twilio';
   $('channels-status').innerHTML =
     `Envoi réel des emails : ${settings.emailConfigured ? '<span class="badge sent">activé</span>' : '<span class="badge demo">non configuré (mode simulation)</span>'} · ` +
     `WhatsApp : ${settings.whatsappConfigured ? '<span class="badge sent">activé</span>' : '<span class="badge demo">non configuré (mode simulation)</span>'}`;
@@ -277,11 +285,21 @@ async function saveSettings() {
       salonName: $('set-name').value,
       slotMinutes: +$('set-slot').value,
       notifyEmail: $('set-email').value,
-      notifyWhatsapp: $('set-wa').value
+      notifyWhatsapp: $('set-wa').value,
+      smtpHost: $('smtp-host').value,
+      smtpPort: $('smtp-port').value,
+      smtpUser: $('smtp-user').value,
+      smtpFrom: $('smtp-from').value,
+      twilioSid: $('tw-sid').value,
+      twilioFrom: $('tw-from').value
     };
     if ($('set-pass').value) body.adminPassword = $('set-pass').value;
+    if ($('smtp-pass').value) body.smtpPass = $('smtp-pass').value;
+    if ($('tw-token').value) body.twilioToken = $('tw-token').value;
     await api('/admin/settings', { method: 'PUT', body: JSON.stringify(body) });
     $('set-pass').value = '';
+    $('smtp-pass').value = '';
+    $('tw-token').value = '';
     flash('Paramètres enregistrés');
     loadSettings();
   } catch (e) { flash(e.message); }
@@ -304,6 +322,18 @@ $('save-week').addEventListener('click', saveWeek);
 $('day-picker').addEventListener('change', loadDay);
 $('add-svc').addEventListener('click', addService);
 $('save-settings').addEventListener('click', saveSettings);
+$('test-email-btn').addEventListener('click', async () => {
+  const btn = $('test-email-btn');
+  btn.disabled = true;
+  btn.textContent = 'Envoi…';
+  try {
+    const r = await api('/admin/test-email', { method: 'POST' });
+    flash(`Email de test envoyé à ${r.to}`);
+    loadNotifs();
+  } catch (e) { flash(e.message); }
+  btn.disabled = false;
+  btn.textContent = 'Envoyer un email de test';
+});
 
 if (token) {
   enterApp().catch(() => logout());
