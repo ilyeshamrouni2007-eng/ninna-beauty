@@ -269,6 +269,8 @@ async function loadSettings() {
   $('smtp-pass').placeholder = settings.smtpPassSet ? '•••••••• (enregistré)' : 'Mot de passe d\'application Gmail';
   $('tw-sid').value = settings.twilioSid || '';
   $('tw-from').value = settings.twilioFrom || '';
+  $('tw-tpl-new').value = settings.twilioTplNew || '';
+  $('tw-tpl-cancel').value = settings.twilioTplCancel || '';
   $('tw-token').placeholder = settings.twilioTokenSet ? '•••••••• (enregistré)' : 'Auth Token Twilio';
   $('channels-status').innerHTML =
     `Envoi réel des emails : ${settings.emailConfigured ? '<span class="badge sent">activé</span>' : '<span class="badge demo">non configuré (mode simulation)</span>'} · ` +
@@ -291,7 +293,9 @@ async function saveSettings() {
       smtpUser: $('smtp-user').value,
       smtpFrom: $('smtp-from').value,
       twilioSid: $('tw-sid').value,
-      twilioFrom: $('tw-from').value
+      twilioFrom: $('tw-from').value,
+      twilioTplNew: $('tw-tpl-new').value,
+      twilioTplCancel: $('tw-tpl-cancel').value
     };
     if ($('set-pass').value) body.adminPassword = $('set-pass').value;
     if ($('smtp-pass').value) body.smtpPass = $('smtp-pass').value;

@@ -34,6 +34,8 @@ const defaultDb = {
     twilioSid: '',
     twilioToken: '',
     twilioFrom: '',
+    twilioTplNew: '',
+    twilioTplCancel: '',
     week: {
       0: [],
       1: [{ from: '09:30', to: '12:30' }, { from: '14:00', to: '18:30' }],
@@ -144,15 +146,21 @@ async function sendEmail(to, subject, text) {
   }
 }
 
-async function sendWhatsapp(to, body) {
+async function sendWhatsapp(to, { body, contentSid, variables } = {}) {
   if (!to) return 'skipped';
   if (!twilioReady()) return 'demo';
   const c = twilioConf();
   try {
     const params = new URLSearchParams({
       From: `whatsapp:${c.from}`,
-      To: `whatsapp:${to}`, Body: body
+      To: `whatsapp:${to}`
     });
+    if (contentSid) {
+      params.set('ContentSid', contentSid);
+      params.set('ContentVariables', JSON.stringify(variables || {}));
+    } else {
+      params.set('Body', body || '');
+    }
     const r = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${c.sid}/Messages.json`, {
       method: 'POST',
       headers: {
@@ -196,7 +204,16 @@ async function notifyBooking(booking, service, kind) {
   const adminEmail = db.settings.notifyEmail;
   logNotif('email', adminEmail, adminSubject, adminBody, await sendEmail(adminEmail, adminSubject, adminBody));
   const wa = db.settings.notifyWhatsapp;
-  logNotif('whatsapp', wa, adminSubject, adminBody, await sendWhatsapp(wa, `${adminSubject}\n\n${adminBody}`));
+  const tpl = isCancel ? db.settings.twilioTplCancel : db.settings.twilioTplNew;
+  const waOpts = tpl
+    ? {
+        contentSid: tpl,
+        variables: isCancel
+          ? { 1: booking.name, 2: service.name, 3: frDate(booking.date), 4: booking.time }
+          : { 1: booking.name, 2: `${service.name} (${service.price} €)`, 3: frDate(booking.date), 4: booking.time, 5: booking.phone }
+      }
+    : { body: `${adminSubject}\n\n${adminBody}` };
+  logNotif('whatsapp', wa, adminSubject, adminBody, await sendWhatsapp(wa, waOpts));
 
   const clientSubject = isCancel
     ? `${db.settings.salonName} — votre rendez-vous est annulé`
@@ -308,7 +325,7 @@ app.put('/api/admin/settings', requireAdmin, (req, res) => {
   if (typeof b.notifyWhatsapp === 'string') s.notifyWhatsapp = b.notifyWhatsapp.trim();
   if (Number.isFinite(+b.slotMinutes) && +b.slotMinutes >= 10 && +b.slotMinutes <= 240) s.slotMinutes = Math.round(+b.slotMinutes);
   if (typeof b.adminPassword === 'string' && b.adminPassword.length >= 4) s.adminPassword = b.adminPassword;
-  for (const k of ['smtpHost', 'smtpPort', 'smtpUser', 'smtpFrom', 'twilioSid', 'twilioFrom']) {
+  for (const k of ['smtpHost', 'smtpPort', 'smtpUser', 'smtpFrom', 'twilioSid', 'twilioFrom', 'twilioTplNew', 'twilioTplCancel']) {
     if (typeof b[k] === 'string') s[k] = b[k].trim();
   }
   for (const k of ['smtpPass', 'twilioToken']) {
