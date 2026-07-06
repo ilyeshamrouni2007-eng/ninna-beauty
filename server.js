@@ -31,6 +31,7 @@ const defaultDb = {
     smtpUser: '',
     smtpPass: '',
     smtpFrom: '',
+    brevoKey: '',
     twilioSid: '',
     twilioToken: '',
     twilioFrom: '',
@@ -128,10 +129,43 @@ function twilioConf() {
 }
 const smtpReady = () => { const c = smtpConf(); return !!(nodemailer && c.host && c.user && c.pass); };
 const twilioReady = () => { const c = twilioConf(); return !!(c.sid && c.token && c.from); };
+const brevoKey = () => db.settings.brevoKey || process.env.BREVO_API_KEY || '';
+
+function senderIdentity() {
+  const c = smtpConf();
+  const raw = (c.from || c.user || '').trim();
+  const m = raw.match(/^(.*)<([^>]+)>$/);
+  if (m) return { name: m[1].trim().replace(/^"|"$/g, '') || db.settings.salonName, email: m[2].trim() };
+  return { name: db.settings.salonName, email: raw };
+}
+const emailReady = () => (!!brevoKey() && !!senderIdentity().email) || smtpReady();
 
 let lastEmailError = '';
 async function sendEmail(to, subject, text) {
   if (!to) return 'skipped';
+  const key = brevoKey();
+  if (key) {
+    const sender = senderIdentity();
+    if (!sender.email) {
+      lastEmailError = 'Renseignez l’adresse email expéditrice (champ « Adresse email » de la section SMTP)';
+      return 'failed';
+    }
+    try {
+      const r = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: { 'api-key': key, 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ sender, to: [{ email: to }], subject, textContent: text })
+      });
+      if (r.ok) { lastEmailError = ''; return 'sent'; }
+      lastEmailError = `Brevo ${r.status} — ${(await r.text()).slice(0, 200)}`;
+      console.error('Email error:', lastEmailError);
+      return 'failed';
+    } catch (e) {
+      lastEmailError = e.message;
+      console.error('Email error:', e.message);
+      return 'failed';
+    }
+  }
   if (!smtpReady()) return 'demo';
   const c = smtpConf();
   try {
@@ -311,12 +345,13 @@ function requireAdmin(req, res, next) {
 }
 
 app.get('/api/admin/settings', requireAdmin, (req, res) => {
-  const { adminPassword, smtpPass, twilioToken, ...settings } = db.settings;
+  const { adminPassword, smtpPass, twilioToken, brevoKey: _bk, ...settings } = db.settings;
   res.json({
     ...settings,
     smtpPassSet: !!smtpConf().pass,
     twilioTokenSet: !!twilioConf().token,
-    emailConfigured: smtpReady(),
+    brevoKeySet: !!brevoKey(),
+    emailConfigured: emailReady(),
     whatsappConfigured: twilioReady()
   });
 });
@@ -332,7 +367,7 @@ app.put('/api/admin/settings', requireAdmin, (req, res) => {
   for (const k of ['smtpHost', 'smtpPort', 'smtpUser', 'smtpFrom', 'twilioSid', 'twilioFrom', 'twilioTplNew', 'twilioTplCancel']) {
     if (typeof b[k] === 'string') s[k] = b[k].trim();
   }
-  for (const k of ['smtpPass', 'twilioToken']) {
+  for (const k of ['smtpPass', 'twilioToken', 'brevoKey']) {
     if (typeof b[k] === 'string' && b[k].trim()) s[k] = b[k].trim();
     if (b[k] === null) s[k] = '';
   }
@@ -442,7 +477,7 @@ app.post('/api/admin/exceptions', requireAdmin, (req, res) => {
 app.get('/api/admin/notifications', requireAdmin, (req, res) => res.json(db.notifications.slice(0, 100)));
 
 app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
-  if (!smtpReady()) return res.status(400).json({ error: 'Configurez et enregistrez d’abord les champs SMTP' });
+  if (!emailReady()) return res.status(400).json({ error: 'Configurez et enregistrez d’abord la clé Brevo ou les champs SMTP' });
   const to = db.settings.notifyEmail || smtpConf().user;
   const status = await sendEmail(to, `${db.settings.salonName} — email de test`, 'Si vous recevez ce message, l’envoi d’emails fonctionne parfaitement ✨');
   logNotif('email', to, 'Email de test', 'Test de la configuration SMTP', status);

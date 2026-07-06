@@ -97,8 +97,11 @@
         <p class="hint" id="channels-status" style="margin-top:10px"></p>
 
         <div style="border-top:1px solid var(--rose-soft); margin-top:22px; padding-top:16px">
-          <p class="section-label">Envoi des emails (SMTP)</p>
-          <p class="hint">Avec Gmail : activez la validation en deux étapes puis créez un « mot de passe d'application » sur <span style="white-space:nowrap">myaccount.google.com/apppasswords</span>. Serveur : smtp.gmail.com, port 587.</p>
+          <p class="section-label">Envoi des emails</p>
+          <p class="hint"><strong>Option recommandée — Brevo</strong> : créez un compte gratuit sur brevo.com, générez une clé API (SMTP &amp; API → API Keys) et collez-la ici. Fonctionne sur tous les hébergeurs.</p>
+          <label class="field">Clé API Brevo</label>
+          <input class="field" id="brevo-key" type="password" placeholder="">
+          <p class="hint" style="margin-top:14px"><strong>Option SMTP</strong> (ignorée si une clé Brevo est renseignée — certains hébergeurs comme Railway bloquent le SMTP). Avec Gmail : validation en deux étapes puis « mot de passe d'application » sur <span style="white-space:nowrap">myaccount.google.com/apppasswords</span>.</p>
           <div style="display:flex; gap:12px; flex-wrap:wrap">
             <span style="flex:2; min-width:200px"><label class="field">Serveur SMTP</label>
             <input class="field" id="smtp-host" placeholder="smtp.gmail.com"></span>

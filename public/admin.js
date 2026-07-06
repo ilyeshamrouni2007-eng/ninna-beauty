@@ -267,6 +267,7 @@ async function loadSettings() {
   $('smtp-user').value = settings.smtpUser || '';
   $('smtp-from').value = settings.smtpFrom || '';
   $('smtp-pass').placeholder = settings.smtpPassSet ? '•••••••• (enregistré)' : 'Mot de passe d\'application Gmail';
+  $('brevo-key').placeholder = settings.brevoKeySet ? '•••••••• (enregistrée)' : 'xkeysib-…';
   $('tw-sid').value = settings.twilioSid || '';
   $('tw-from').value = settings.twilioFrom || '';
   $('tw-tpl-new').value = settings.twilioTplNew || '';
@@ -299,10 +300,12 @@ async function saveSettings() {
     };
     if ($('set-pass').value) body.adminPassword = $('set-pass').value;
     if ($('smtp-pass').value) body.smtpPass = $('smtp-pass').value;
+    if ($('brevo-key').value) body.brevoKey = $('brevo-key').value;
     if ($('tw-token').value) body.twilioToken = $('tw-token').value;
     await api('/admin/settings', { method: 'PUT', body: JSON.stringify(body) });
     $('set-pass').value = '';
     $('smtp-pass').value = '';
+    $('brevo-key').value = '';
     $('tw-token').value = '';
     flash('Paramètres enregistrés');
     loadSettings();
