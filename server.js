@@ -199,16 +199,31 @@ async function sendWhatsapp(to, { body, contentSid, variables } = {}) {
     } else {
       params.set('Body', body || '');
     }
+    const auth = 'Basic ' + Buffer.from(`${c.sid}:${c.token}`).toString('base64');
     const r = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${c.sid}/Messages.json`, {
       method: 'POST',
-      headers: {
-        Authorization: 'Basic ' + Buffer.from(`${c.sid}:${c.token}`).toString('base64'),
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
+      headers: { Authorization: auth, 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params
     });
-    if (!r.ok) console.error('Twilio error:', await r.text());
-    return r.ok ? 'sent' : 'failed';
+    if (!r.ok) {
+      console.error('Twilio error:', await r.text());
+      return 'failed';
+    }
+    const msg = await r.json();
+    for (let i = 0; i < 5; i++) {
+      await new Promise(res => setTimeout(res, 3000));
+      const st = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${c.sid}/Messages/${msg.sid}.json`, {
+        headers: { Authorization: auth }
+      });
+      if (!st.ok) break;
+      const m = await st.json();
+      if (['delivered', 'read'].includes(m.status)) return 'sent';
+      if (['undelivered', 'failed'].includes(m.status)) {
+        console.error('WhatsApp non livré, code erreur', m.error_code);
+        return 'failed';
+      }
+    }
+    return 'sent';
   } catch (e) {
     console.error('WhatsApp error:', e.message);
     return 'failed';
@@ -251,7 +266,11 @@ async function notifyBooking(booking, service, kind) {
           : { 1: booking.name, 2: `${service.name} (${service.price} €)`, 3: frDate(booking.date), 4: booking.time, 5: booking.phone }
       }
     : { body: `${adminSubject}\n\n${adminBody}` };
-  logNotif('whatsapp', wa, adminSubject, adminBody, await sendWhatsapp(wa, waOpts));
+  let waStatus = await sendWhatsapp(wa, waOpts);
+  if (waStatus === 'failed' && waOpts.contentSid) {
+    waStatus = await sendWhatsapp(wa, { body: `${adminSubject}\n\n${adminBody}` });
+  }
+  logNotif('whatsapp', wa, adminSubject, adminBody, waStatus);
 
   const clientSubject = isCancel
     ? `${db.settings.salonName} — votre rendez-vous est annulé`
